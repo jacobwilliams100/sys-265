@@ -1,0 +1,44 @@
+version: '3'
+services:
+  #PLEX config
+  plex:
+    container_name: plex
+    image: plexinc/pms-docker
+    network_mode: host
+    #host mode is simplest, but bridged and macvlan are also available.
+    environment:
+    #you need to add your own
+      - TZ=(your_time_zone)
+      - PLEX_CLAIM=(your_plex_claim_code)
+    volumes:
+      - ./database:/config
+      - ./transcode:/transcode
+      #Your media will go here.
+      - ./media:/data
+    restart: always
+    depends_on:
+      - filebrowser
+  #FileBrowser Config:
+  filebrowser:
+    image: filebrowser/filebrowser
+    container_name: filebrowser
+    volumes:
+      #These are the directories filebrowser will have access to. We are giving it access to Plex's media folder.
+      - ./media:/srv
+      #You will need to make these files manually, and create settings.json config:
+      - ./filebrowser/filebrowser.db:/database/filebrowser.db
+      - ./filebrowser/settings.json:/config/settings.json
+    environment:
+      - PUID=$(id -u)
+      - PGID=$(id -g)
+    ports:
+      - 8095:80
+  #Nginx Config:
+  nginx:
+    container_name: nginx
+    image: nginx
+    ports:
+      #We will stick to the default HTML
+      - 80:80
+    volumes:
+      - ./html:/usr/share/nginx/html
